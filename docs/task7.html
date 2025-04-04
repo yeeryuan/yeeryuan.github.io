@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>任务七：日语阅读理解</title>
+  <style>
+    /* 全局默认中文字体 */
+    body {
+      margin: 20px;
+      background-color: #f9f9f9;
+      color: #333;
+      font-family: "Microsoft YaHei", "PingFang SC", "SimSun", sans-serif;
+      font-size: 16px;
+      line-height: 2;
+    }
+    h2 {
+      margin-bottom: 10px;
+    }
+    /* 用于日语文本的类 */
+    .japanese-text {
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic Pro", "Meiryo", sans-serif;
+      font-size: 16px;
+      line-height: 2;
+      color: #333;
+    }
+    /* 中文提示（任务说明、编号输入等） */
+    .instruction {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .research-info {
+      margin-bottom: 20px;
+    }
+    .research-info label {
+      margin-right: 10px;
+      font-size: 16px;
+    }
+    .research-info input {
+      padding: 5px;
+      font-size: 16px;
+      width: 250px;
+    }
+    .start-area {
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+    .start-area button {
+      padding: 6px 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+      background-color: #3498db;
+      color: #fff;
+      cursor: pointer;
+    }
+    .start-area button:hover {
+      background-color: #2980b9;
+    }
+    /* 主容器：左侧文章（应用日语字体）+ 右侧阅读题 */
+    .container {
+      display: none;
+      position: relative;
+      height: 600px;
+    }
+    .left-section {
+      width: 60%;
+      height: 100%;
+      float: left;
+      overflow-y: auto;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 15px;
+      box-sizing: border-box;
+    }
+    .right-section {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 35%;
+      height: 100%;
+      overflow-y: auto;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 15px;
+      box-sizing: border-box;
+    }
+    /* 文章段落 */
+    .article p {
+      margin: 0 0 10px 0;
+    }
+    /* 阅读理解题 */
+    .question {
+      margin-bottom: 20px;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 10px;
+    }
+    .question h3 {
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    .options {
+      margin-left: 20px;
+      margin-bottom: 5px;
+    }
+    .options label {
+      display: block;
+      margin-bottom: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    /* 底部按钮 */
+    .buttons {
+      margin-top: 20px;
+      clear: both;
+    }
+    #completeButton, #downloadButton {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: background-color 0.3s ease;
+    }
+    #completeButton {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    #completeButton.enabled {
+      background-color: #e74c3c;
+      cursor: pointer;
+    }
+    #downloadButton {
+      background-color: #3498db;
+      display: none;
+    }
+    #downloadButton:hover {
+      background-color: #2980b9;
+    }
+    /* 单词弹窗：显示在点击单词后，右上方有圆形关闭按钮 */
+    .word-popup {
+      position: absolute;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 8px 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      z-index: 999;
+      font-size: 16px;
+      line-height: 2;
+      /* 使用中文字体仅用于描述部分 */
+      font-family: "Microsoft YaHei", "PingFang SC", "SimSun", sans-serif;
+    }
+    .word-popup-header {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 6px;
+    }
+    .close-btn-circle {
+      background-color: #aaa;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      text-align: center;
+      cursor: pointer;
+      color: #fff;
+      font-size: 16px;
+      line-height: 24px;
+    }
+    .close-btn-circle:hover {
+      background-color: #888;
+    }
+    /* 用于弹窗中显示单词部分：保持日语字体 */
+    .popup-word {
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic Pro", "Meiryo", sans-serif;
+    }
+    /* 用于弹窗中显示描述部分：中文字体 */
+    .popup-desc {
+      font-family: "Microsoft YaHei", "PingFang SC", "SimSun", sans-serif;
+    }
+    /* 加粗单词（文章中）保持日语字体 */
+    strong {
+      cursor: pointer;
+    }
+    /* 下划线 */
+    u {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h2>任务七：日语阅读理解</h2>
+
+  <!-- 任务说明 (中文) -->
+  <div class="instruction">
+    <p>感谢您的参与！</p>
+    <p>请仔细阅读下面的日语文章，并回答阅读理解题目。</p>
+    <p>完成后，点击“完成”并下载学习数据。没有时间限制，请认真作答。</p>
+  </div>
+
+  <!-- 编号输入 (中文) -->
+  <div class="research-info">
+    <label for="researchId">请输入您的编号：</label>
+    <input type="text" id="researchId" placeholder="例：20250403-001">
+  </div>
+
+  <!-- 开始按钮区域 (中文) -->
+  <div class="start-area">
+    如您已准备就绪，请点击“开始”：
+    <button id="startButton">开始</button>
+  </div>
+
+  <!-- 主容器：左侧文章（使用日语字体）+ 右侧阅读理解题 -->
+  <div class="container" id="mainContainer">
+    <!-- 左侧文章 -->
+    <div class="left-section japanese-text">
+      <div class="article">
+        <p>
+          「おじいちゃんの宝物、見つけたよ！」<br>
+          汗で濡れた手で鉄の箱を持ち、私は海沿いを走っていた。祖父母の家での夏休みも三日目――たった一枚のメモが、この日を特別な日に変えることになるとはその時はまだ知らなかった。
+        </p>
+        <p>
+          朝、祖母が<strong id="そぼろ">そぼろ</strong>丼を作っていた。その音と、窓の外から聞こえる川の<strong id="せせらぎ">せせらぎ</strong>が不思議に調和していた。<strong id="名うて">名うて</strong>の料理人の祖母が作ったものを楽しんでいった。
+        </p>
+        <p>
+          その時、テーブルの上に黄色いメモ用紙が落ちているのに気付いた。「すべての宝物は松の下に」と書いてある。
+        </p>
+        <p>
+          「おばあちゃん、これ…」私がメモを見せると、祖母は肉を切る手をやめた。<br>
+          「ああ、それならさっき、ここから出てきたのよ。確かにおじいちゃんの字だわ」<br>
+          「ええ、本当？他の人の字じゃない？」私は疑った。<br>
+          「病気になった後、字が下手になったわよ」祖母はまた肉を切り始めた。
+        </p>
+        <p>
+          「じゃあ、この松の木って…？」熟練の<strong id="手捌き">手捌き</strong>で肉を切っていた祖母に、木の場所を聞いた。<br>
+          「昔、じいちゃんが海の<strong id="うねり">うねり</strong>を見る時、あの松を目印にしたの。その時、『明日は大漁だ』と言ったこともあるんだけど、それはただの<strong id="はったり">はったり</strong>だと思ったわ」と祖母が笑顔で言った。
+        </p>
+        <p>
+          「えっ、どこ？」私が<strong id="せがむ">せがむ</strong>と、祖母は地図を描いた。<br>
+          30分ほど歩くと、<strong id="ごつい">ごつい</strong>岩のそばに松の木が立っていた。その木の下に<strong id="赤札">赤札</strong>が取れた看板が倒れていた。その近くを掘ると、鉄の箱が出てきた。蓋には「勇作」――祖父の本名が書かれていた。
+        </p>
+        <p>
+          中から<strong id="刃渡り">刃渡り</strong>20cmのナイフと手帳が出てきた。手帳を開くと「<strong id="干潟">干潟</strong>に逃げた魚たちを取るには…」と漁法が詳しく書いてある。その横には「昨日、また<strong id="苗代">苗代</strong>の水管理を忘れた。だけど鯛を食べて腹が<strong id="くちい">くちく</strong>なった…」という日常の話も書いてあった。読み続けるうち、<u>①胸が熱くなってきた</u>。5年前に認知症になってしまった祖父が、病気と戦いながら、必死で記憶を留めようとした跡だった。
+        </p>
+        <p>
+          夕方、海で手帳を読んでいると、砂を踏む音がした。いつもテレビの前で<strong id="腹這い">腹這い</strong>になっている祖父が立っていた。祖父は<strong id="沖合">沖合</strong>に泊まっていた船を眺めていった。祖父を見て、空気が<strong id="よどむ">よどんで</strong>苦しくなった。
+        </p>
+        <p>
+          夕食の時、祖母が<strong id="佃煮">佃煮</strong>を運んできた。<br>
+          「ちょっと濃い味になっちゃったけどね」祖母はそう言って笑った。<br>
+          私は手帳とナイフをテーブルに置いて、今日のことの<strong id="あらまし">あらまし</strong>を話した。この夜、祖母から祖父のことを色々聞いた。祖母が言った言葉――「漁師の誇りは海にあり」が心に刺された。
+        </p>
+        <p>
+          翌朝、私が手帳をもう一度読んでいると、最後のページに気付いた。新しい日付で『勇の宝物は孫が継ぐ』と祖母の字で書いてあった。私はまた<u>②胸が熱くなった</u>。<strong id="介添え">介添え</strong>が必要なお年寄りでも海を感じられるように、<strong id="めげる">めげる</strong>ことなく挑戦したい――私は初めて自分の「誇り」を探し始めた。
+        </p>
+      </div>
+    </div>
+
+    <!-- 右侧阅读理解题 (日语文本) -->
+    <div class="right-section japanese-text">
+      <div class="question" id="q1">
+        <h3>問題1： 祖母はメモの内容についてどう考えていますか？</h3>
+        <div class="options">
+          <label><input type="radio" name="q1" value="A">A. 完全な偽物だと断定した</label>
+          <label><input type="radio" name="q1" value="B">B. 孫のいたずらだと疑った</label>
+          <label><input type="radio" name="q1" value="C">C. 祖父の字である可能性を示唆した</label>
+          <label><input type="radio" name="q1" value="D">D. 重要な手がかりとすぐ判断した</label>
+        </div>
+      </div>
+      <div class="question" id="q2">
+        <h3>問題2： 下線部分の①「胸が熱くなってきた」について、この理由は何ですか？</h3>
+        <div class="options">
+          <label><input type="radio" name="q2" value="A">A. 鉄の箱から高価なナイフと手帳を見つけたから</label>
+          <label><input type="radio" name="q2" value="B">B. 祖父が認知症と闘いながら日記を書いた事を知ったから</label>
+          <label><input type="radio" name="q2" value="C">C. 祖父母の家の近くの海沿いの景色がとても美しかったから</label>
+          <label><input type="radio" name="q2" value="D">D. 料理家である祖母の料理の技に感動したから</label>
+        </div>
+      </div>
+      <div class="question" id="q3">
+        <h3>問題3： 下線部分の②「胸が熱くなった」について、どの出来事がきっかけですか？</h3>
+        <div class="options">
+          <label><input type="radio" name="q3" value="A">A. 祖母の言葉を通して海の重要性を強く感じたから</label>
+          <label><input type="radio" name="q3" value="B">B. 手帳の最後のページの祖母の追記を読んだから</label>
+          <label><input type="radio" name="q3" value="C">C. 祖父が海を見つめる姿に感動したから</label>
+          <label><input type="radio" name="q3" value="D">D. 自分で漁を体験する決意を固めたから</label>
+        </div>
+      </div>
+      <div class="question" id="q4">
+        <h3>問題4： 主人公が「自分の誇りを探し始めた」直接的な理由は何ですか？</h3>
+        <div class="options">
+          <label><input type="radio" name="q4" value="A">A. 祖父の素晴らしい漁法を学びたかったから</label>
+          <label><input type="radio" name="q4" value="B">B. 日記に記された祖父の思いを知ったから</label>
+          <label><input type="radio" name="q4" value="C">C. 祖母が書いた言葉に刺激を受けたから</label>
+          <label><input type="radio" name="q4" value="D">D. 漁師の誇りが何かを完全に理解したから</label>
+        </div>
+      </div>
+      <div class="question" id="q5">
+        <h3>問題5： 次の出来事を正しい順番に並べなさい：</h3>
+        <p>a. 松の木の下から鉄の箱を掘り出す<br>
+           b. 祖母から祖父の過去を聞く<br>
+           c. 黄色メモ用紙を発見する<br>
+           d. 手帳の最後のページに気付く</p>
+        <div class="options">
+          <label><input type="radio" name="q5" value="A">A. c→a→b→d</label>
+          <label><input type="radio" name="q5" value="B">B. a→c→d→b</label>
+          <label><input type="radio" name="q5" value="C">C. b→c→a→d</label>
+          <label><input type="radio" name="q5" value="D">D. d→a→c→b</label>
+        </div>
+      </div>
+      <div class="question" id="q6">
+        <h3>問題6： この文章で最も強調されているテーマは何ですか？</h3>
+        <div class="options">
+          <label><input type="radio" name="q6" value="A">A. 認知症患者の苦痛</label>
+          <label><input type="radio" name="q6" value="B">B. 家族の絆と記憶の継承</label>
+          <label><input type="radio" name="q6" value="C">C. 漁業技術の重要性</label>
+          <label><input type="radio" name="q6" value="D">D. 高齢者支援の必要性</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部按钮 -->
+  <div class="buttons">
+    <button id="completeButton" disabled>完成</button>
+    <button id="downloadButton">下载所有学习数据</button>
+  </div>
+
+  <script>
+    /*************************************************************
+     * 1. 全局变量与计时逻辑
+     *************************************************************/
+    let taskStartTime = null;
+    const userAnswers = Array(6).fill(null);
+    const researchIdInput = document.getElementById("researchId");
+    const startButton = document.getElementById("startButton");
+    const mainContainer = document.getElementById("mainContainer");
+    const completeButton = document.getElementById("completeButton");
+    const downloadButton = document.getElementById("downloadButton");
+
+    // 点击“开始” => 记录开始时间 & 显示主容器
+    startButton.addEventListener("click", () => {
+      const researchId = researchIdInput.value.trim();
+      if (!researchId) {
+        alert("番号を入力してください。");
+        return;
+      }
+      taskStartTime = new Date();
+      mainContainer.style.display = "block";
+      startButton.disabled = true;
+    });
+
+    /*************************************************************
+     * 2. 阅读理解题选项监听
+     *************************************************************/
+    for (let i = 1; i <= 6; i++) {
+      const qDiv = document.getElementById("q" + i);
+      const radios = qDiv.querySelectorAll("input[type='radio']");
+      radios.forEach(radio => {
+        radio.addEventListener("change", () => {
+          userAnswers[i-1] = radio.value;
+          // 若6道题全部答完 => 完成按钮可点击
+          if (userAnswers.every(ans => ans !== null)) {
+            completeButton.disabled = false;
+            completeButton.classList.add("enabled");
+          }
+        });
+      });
+    }
+
+    /*************************************************************
+     * 3. 单词点击弹窗（带圆形关闭按钮）
+     *************************************************************/
+    let currentPopup = null;
+    // 20个单词数据（词形中文，词性中文，含义中文）
+    const wordsData = [
+      { id: "あらまし", word: "あらまし", part: "名词", meaning: "梗概", clickCount: 0 },
+      { id: "くちい", word: "くちい", part: "形容词", meaning: "吃撑", clickCount: 0 },
+      { id: "そぼろ", word: "そぼろ", part: "名词", meaning: "鱼肉等肉松", clickCount: 0 },
+      { id: "介添え", word: "介添え(かいぞえ)", part: "名词", meaning: "照料", clickCount: 0 },
+      { id: "うねり", word: "うねり", part: "名词", meaning: "浪涛", clickCount: 0 },
+      { id: "ごつい", word: "ごつい", part: "形容词", meaning: "坚硬的", clickCount: 0 },
+      { id: "佃煮", word: "佃煮(つくだに)", part: "名词", meaning: "甜烹海味", clickCount: 0 },
+      { id: "めげる", word: "めげる", part: "动词", meaning: "泄气", clickCount: 0 },
+      { id: "はったり", word: "はったり", part: "名词", meaning: "虚张声势", clickCount: 0 },
+      { id: "名うて", word: "名うて(なうて)", part: "名词", meaning: "有名", clickCount: 0 },
+      { id: "赤札", word: "赤札(あかふだ)", part: "名词", meaning: "红色打折标签", clickCount: 0 },
+      { id: "刃渡り", word: "刃渡り(はわたり)", part: "名词", meaning: "刀刃长度", clickCount: 0 },
+      { id: "せがむ", word: "せがむ", part: "动词", meaning: "央求", clickCount: 0 },
+      { id: "せせらぎ", word: "せせらぎ", part: "名词", meaning: "潺潺水声", clickCount: 0 },
+      { id: "腹這い", word: "腹這い(はらばい)", part: "名词", meaning: "俯卧", clickCount: 0 },
+      { id: "干潟", word: "干潟(ひがた)", part: "名词", meaning: "潮滩", clickCount: 0 },
+      { id: "よどむ", word: "よどむ", part: "动词", meaning: "停滞", clickCount: 0 },
+      { id: "苗代", word: "苗代(なわしろ)", part: "名词", meaning: "秧田", clickCount: 0 },
+      { id: "手捌き", word: "手捌き(てさばき)", part: "名词", meaning: "手法", clickCount: 0 },
+      { id: "沖合", word: "沖合(おきあい)", part: "名词", meaning: "海上", clickCount: 0 }
+    ];
+
+    wordsData.forEach(item => {
+      const el = document.getElementById(item.id);
+      if (el) {
+        el.addEventListener("click", (evt) => {
+          item.clickCount++;
+          showWordPopup(item, evt);
+        });
+      }
+    });
+
+    function showWordPopup(wordItem, evt) {
+      hideWordPopup();
+      currentPopup = document.createElement("div");
+      currentPopup.className = "word-popup";
+
+      // 弹窗头部：右上方圆形关闭按钮
+      const header = document.createElement("div");
+      header.className = "word-popup-header";
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "close-btn-circle";
+      closeBtn.textContent = "x";
+      closeBtn.addEventListener("click", hideWordPopup);
+      header.appendChild(closeBtn);
+      currentPopup.appendChild(header);
+
+      // 弹窗内容：将单词部分使用日语字体，描述部分使用中文字体
+      const detailDiv = document.createElement("div");
+      // 单词（保持日语原样）
+      const spanWord = document.createElement("span");
+      spanWord.className = "popup-word";
+      spanWord.textContent = wordItem.word;
+      // 词性和中文含义（中文字体）
+      const spanDesc = document.createElement("span");
+      spanDesc.className = "popup-desc";
+      spanDesc.textContent = `：${wordItem.part}；${wordItem.meaning}`;
+      detailDiv.appendChild(spanWord);
+      detailDiv.appendChild(spanDesc);
+      currentPopup.appendChild(detailDiv);
+
+      document.body.appendChild(currentPopup);
+
+      // 定位到单词右上方
+      const rect = evt.target.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+      currentPopup.style.top = (rect.top + scrollTop - currentPopup.offsetHeight - 5) + "px";
+      currentPopup.style.left = (rect.left + scrollLeft) + "px";
+    }
+
+    function hideWordPopup() {
+      if (currentPopup) {
+        document.body.removeChild(currentPopup);
+        currentPopup = null;
+      }
+    }
+
+    /*************************************************************
+     * 4. 完成按钮
+     *************************************************************/
+    completeButton.addEventListener("click", () => {
+      const researchId = researchIdInput.value.trim();
+      if (!researchId) {
+        alert("番号を入力してください。");
+        return;
+      }
+      if (!taskStartTime) {
+        alert("「開始」ボタンをクリックしてください。");
+        return;
+      }
+      const endTime = new Date();
+      const duration = ((endTime - taskStartTime) / 1000).toFixed(2);
+
+      // 构造导出数据
+      const dataToExport = {
+        researchId: researchId,
+        taskDuration: duration,
+        answers: userAnswers,
+        wordClicks: wordsData.map(item => ({
+          word: item.word,
+          part: item.part,
+          meaning: item.meaning,
+          clickCount: item.clickCount
+        }))
+      };
+      localStorage.setItem("exportTask4", JSON.stringify(dataToExport));
+
+      completeButton.style.display = "none";
+      downloadButton.style.display = "inline-block";
+    });
+
+    /*************************************************************
+     * 5. 下载CSV（文件名格式：学习数据_任务7_输入编号_YYYYMMDD.csv）
+     *************************************************************/
+    downloadButton.addEventListener("click", () => {
+      const dataStr = localStorage.getItem("exportTask4");
+      if (!dataStr) {
+        alert("データがありません。");
+        return;
+      }
+      const data = JSON.parse(dataStr);
+
+      // 生成日期字符串
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const dateStr = `${yyyy}${mm}${dd}`;
+
+      let csvContent = "data:text/csv;charset=utf-8,\n";
+      csvContent += "番号," + data.researchId + "\n";
+      csvContent += "タスク所要時間(秒)," + data.taskDuration + "\n\n";
+
+      // 阅读理解题答案
+      csvContent += "題号,選択\n";
+      data.answers.forEach((ans, i) => {
+        csvContent += (i + 1) + "," + ans + "\n";
+      });
+      csvContent += "\n";
+
+      // 单词点击次数
+      csvContent += "単語,詞性；含义,点击次数\n";
+      data.wordClicks.forEach(item => {
+        csvContent += `${item.word},${item.part}；${item.meaning},${item.clickCount}\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const fileName = `学习数据_任务7_${data.researchId}_${dateStr}.csv`;
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+  </script>
+</body>
+</html>
