@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>任务一：日语单词记忆</title>
+  <style>
+    body {
+      font-family: "Microsoft YaHei","PingFang SC","SimSun",sans-serif;
+      margin:20px; background:#f9f9f9; color:#333;
+    }
+    h2 { margin-bottom:15px; }
+
+    .instruction {
+      background:#fff; border:1px solid #ddd; border-radius:6px;
+      padding:15px; margin-bottom:20px;
+    }
+    .research-info {
+      margin-bottom:20px;
+    }
+    .research-info label {
+      font-size:16px; margin-right:10px;
+    }
+    .research-info input {
+      padding:5px; font-size:16px; width:250px;
+    }
+    .start-area {
+      margin-bottom:20px; font-size:16px;
+    }
+    .start-area button {
+      padding:6px 12px; font-size:16px; border:none;
+      border-radius:4px; background:#3498db; color:#fff;
+      cursor:pointer;
+    }
+    .start-area button:hover { background:#2980b9; }
+
+    .word-list {
+      display:none; flex-direction:column; gap:2px;
+      width:100%;
+    }
+    .word-header, .word-item {
+      display:flex; align-items:center;
+      background:#fff; border:1px solid #ddd; border-radius:4px;
+      padding:8px; box-sizing:border-box; width:100%;
+    }
+    .word-header { background:#f0f0f0; font-weight:bold; }
+    .col-word, .col-part, .col-anno, .col-remember {
+      flex:1; padding:0 8px; box-sizing:border-box;
+    }
+    .col-remember { text-align:center; }
+
+    .word-text {
+      cursor:pointer;
+      font-family:"Hiragino Sans","Meiryo",sans-serif;
+      font-size:16px; line-height:2; font-weight:normal;
+    }
+    .col-remember input[type="checkbox"] {
+      transform:scale(1.5); margin-top:4px;
+    }
+
+    #completeButton {
+      margin-top:20px; padding:10px 20px; font-size:16px;
+      border:none; border-radius:4px; background:#ccc; color:#fff;
+      cursor:not-allowed; float:left;
+    }
+    #completeButton.enabled {
+      background:#e74c3c; cursor:pointer;
+    }
+    #downloadButton {
+      display:none; margin-top:10px; padding:10px 20px;
+      font-size:16px; border:none; border-radius:4px;
+      background:#3498db; color:#fff; cursor:pointer; float:left;
+    }
+    #downloadButton:hover { background:#2980b9; }
+    .clear { clear:both; }
+  </style>
+</head>
+<body>
+  <h2>任务一：日语单词记忆</h2>
+
+  <div class="instruction">
+    <p>感谢您的参与。</p>
+    <p>以下是19个日语单词。请努力记住这些单词。没有时间限制。请认真完成。</p>
+    <p>点击单词后可显示或隐藏该单词的词性及中文释义。</p>
+    <p>每记住一个单词，请勾选“已记住”。勾选后，该行锁定，不可再次点击单词。</p>
+    <p>全部记住后，点击“完成”并下载学习数据。之后会进行单词测试。</p>
+  </div>
+
+  <div class="research-info">
+    <label for="researchId">请输入您的编号：</label>
+    <input type="text" id="researchId" placeholder="例如：20250301-001">
+  </div>
+
+  <div class="start-area">
+    如您已准备就绪，请点击“开始”：
+    <button id="startButton">开始</button>
+  </div>
+
+  <div class="word-list" id="wordList">
+    <div class="word-header">
+      <div class="col-word">单词</div>
+      <div class="col-part">词性</div>
+      <div class="col-anno">中文释义</div>
+      <div class="col-remember">已记住</div>
+    </div>
+    <!-- JS 动态插入单词行 -->
+  </div>
+
+  <button id="completeButton" disabled>完成</button>
+  <button id="downloadButton">下载所有学习数据</button>
+  <div class="clear"></div>
+
+  <script>
+    function nowJST() {
+      return new Date().toLocaleString('ja-JP',{
+        timeZone:'Asia/Tokyo', hour12:false
+      });
+    }
+
+    const wordsData = [
+      { word:"潮騒(しおさい)", part:"名词", annotation:"涨潮时的涛声" },
+      { word:"手捌き(てさばき)", part:"名词", annotation:"操作手法" },
+      { word:"せせらぎ", part:"名词", annotation:"潺潺水声" },
+      { word:"こめかみ", part:"名词", annotation:"太阳穴" },
+      { word:"はったり", part:"名词", annotation:"虚张声势" },
+      { word:"筒抜け(つつぬけ)", part:"名词", annotation:"秘密等完全泄露" },
+      { word:"図太い(ずぶとい)", part:"形容词", annotation:"厚脸皮的" },
+      { word:"うねり", part:"名词", annotation:"汹涌的浪涛" },
+      { word:"せがむ", part:"动词", annotation:"央求" },
+      { word:"躍起(やっき)", part:"名词", annotation:"性急而较真" },
+      { word:"縁取り(ふちどり)", part:"名词", annotation:"镶边" },
+      { word:"いかつい", part:"形容词", annotation:"粗壮的" },
+      { word:"干潟(ひがた)", part:"名词", annotation:"滩涂" },
+      { word:"苗代(なわしろ)", part:"名词", annotation:"秧田" },
+      { word:"沖合(おきあい)", part:"名词", annotation:"离岸海域" },
+      { word:"生え際(はえぎわ)", part:"名词", annotation:"发际" },
+      { word:"淀む(よどむ)", part:"动词", annotation:"停滞" },
+      { word:"あらまし", part:"名词", annotation:"大体情况" },
+      { word:"介添え(かいぞえ)", part:"名词", annotation:"照料" }
+    ].map(w=>({
+      ...w,
+      remembered:false,
+      firstClick:null,
+      firstClickTS:null,
+      rememberTS:null,
+      clickLog:[],
+      exposeStart:null
+    }));
+
+    let taskStart=null, taskEnd=null;
+    const eventLog=[];
+
+    const listEl=document.getElementById("wordList"),
+          startBtn=document.getElementById("startButton"),
+          completeBtn=document.getElementById("completeButton"),
+          downloadBtn=document.getElementById("downloadButton");
+
+    startBtn.onclick=()=>{
+      const id=document.getElementById("researchId").value.trim();
+      if(!id){alert("请先输入您的编号！");return;}
+      taskStart=Date.now();
+      listEl.style.display="flex";
+      startBtn.disabled=true;
+      eventLog.push({word:'—', action:'任务开始', ts:nowJST()});
+    };
+
+    wordsData.forEach(w=>{
+      const row=document.createElement("div"); row.className="word-item";
+      const c1=document.createElement("div"); c1.className="col-word";
+      const span=document.createElement("span"); span.className="word-text"; span.textContent=w.word;
+      const c2=document.createElement("div"); c2.className="col-part";
+      const c3=document.createElement("div"); c3.className="col-anno";
+      const c4=document.createElement("div"); c4.className="col-remember";
+      const chk=document.createElement("input"); chk.type="checkbox";
+      c4.appendChild(chk);
+
+      span.onclick=()=>{
+        if(w.remembered) return;
+        const ts=nowJST();
+        if(!w.firstClick){
+          w.firstClick=true; w.firstClickTS=ts;
+        }
+        if(!w.exposeStart){
+          c2.textContent=w.part; c3.textContent=w.annotation;
+          w.exposeStart=Date.now();
+          w.clickLog.push({ts, state:'显示', duration:''});
+          eventLog.push({word:w.word,action:'显示',ts});
+        } else {
+          c2.textContent=''; c3.textContent='';
+          const dur=((Date.now()-w.exposeStart)/1000).toFixed(2);
+          w.clickLog.push({ts,state:'隐藏',duration:dur});
+          eventLog.push({word:w.word,action:'隐藏',ts,duration:dur});
+          w.exposeStart=null;
+        }
+      };
+
+      chk.onchange=()=>{
+        // **新增**：未点击即勾选时给提示并回退勾选
+        if(!w.firstClick){
+          alert("请先点击单词并查看释义，再勾选“已记住”！");
+          chk.checked=false;
+          return;
+        }
+        if(!chk.checked) return;
+        w.remembered=true; w.rememberTS=nowJST();
+        chk.disabled=true; row.style.background="#fff0f0";
+        const totalDur=((Date.now()-w.firstClick)/1000).toFixed(2);
+        eventLog.push({word:w.word,action:'已记住',ts:w.rememberTS,duration:totalDur});
+        if(wordsData.every(x=>x.remembered)){
+          completeBtn.disabled=false; completeBtn.classList.add("enabled");
+        }
+      };
+
+      c1.appendChild(span);
+      row.append(c1,c2,c3,c4);
+      listEl.appendChild(row);
+    });
+
+    completeBtn.onclick=()=>{
+      if(!taskStart){alert("请点击开始");return;}
+      taskEnd=Date.now();
+      eventLog.push({word:'—',action:'任务结束',ts:nowJST()});
+      completeBtn.style.display="none"; downloadBtn.style.display="block";
+    };
+
+    downloadBtn.onclick=()=>{
+      const id=document.getElementById("researchId").value.trim();
+      const date=new Date(), 
+            dateStr=`${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}`;
+
+      let csv="data:text/csv;charset=utf-8,\n";
+      csv+="编号,"+id+"\n";
+      csv+="任务时长(秒)," + ((taskEnd-taskStart)/1000).toFixed(2) + "\n\n";
+      csv+="单词,已记住,点击次数,首次点击时间,勾选时间,勾选时长(秒)\n";
+      wordsData.forEach(w=>{
+        const cnt=w.clickLog.filter(e=>e.state==='显示').length;
+        const dur=((new Date(w.rememberTS)-new Date(w.firstClickTS))/1000).toFixed(2);
+        csv+=[
+          w.word,
+          w.remembered?'是':'否',
+          cnt,
+          w.firstClickTS||'',
+          w.rememberTS||'',
+          w.rememberTS?dur:''
+        ].join(",")+"\n";
+      });
+      csv+="\n单词,时间戳(JST),状态,暴露时长(秒)\n";
+      wordsData.forEach(w=>{
+        w.clickLog.forEach(e=>{
+          csv+=[w.word,e.ts,e.state,e.duration].join(",")+"\n";
+        });
+      });
+
+      const uri=encodeURI(csv), a=document.createElement("a");
+      a.href=uri;
+      a.download=`学习数据_任务1_${id}_${dateStr}.csv`;
+      document.body.appendChild(a);
+      a.click(); a.remove();
+    };
+  </script>
+</body>
+</html>
