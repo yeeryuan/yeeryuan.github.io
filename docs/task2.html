@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>任务二：日语单词词义匹配</title>
+<style>
+  body, p, label, input, table, th, td, .instruction, .research-info, .start-task, .buttons button {
+    font-family: Arial, sans-serif;
+  }
+  body {
+    margin: 20px; background-color: #f9f9f9; color: #333; line-height: 1.6;
+  }
+  h2 { margin-bottom: 10px; }
+  .instruction {
+    background-color: #fff; border: 1px solid #ddd; border-radius: 6px;
+    padding: 15px; margin-bottom: 20px;
+  }
+  .research-info { margin-bottom: 20px; }
+  .research-info label { font-size: 16px; margin-right: 10px; }
+  .research-info input { padding: 5px; font-size: 16px; width: 250px; }
+  .start-task {
+    margin-bottom: 20px; font-size: 16px; display: flex; align-items: center;
+  }
+  #startButton {
+    background-color: #3498db; color: #fff; border: none; border-radius: 4px;
+    padding: 8px 16px; cursor: pointer; font-size: 16px; margin-left: 10px;
+  }
+  #startButton:hover { background-color: #2980b9; }
+  .container { display: none; }
+  table {
+    width: 100%; border-collapse: separate; border-spacing: 0 4px;
+  }
+  th, td {
+    padding: 6px; text-align: left; font-size: 16px;
+    border: 1px solid #dee2e6; border-radius: 4px; background-color: #fff;
+  }
+  th { background-color: #f1f3f5; }
+  td input {
+    width: 80px; padding: 5px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px;
+  }
+  .word-cell span {
+    font-family: "Hiragino Sans", "Meiryo", sans-serif;
+    font-size: 16px; line-height: 1.5;
+  }
+  .word-detail {
+    display: none; margin-top: 4px; font-size: 14px; color: #555;
+  }
+  .buttons { margin-top: 20px; }
+  #completeButton, #downloadButton {
+    padding: 10px 20px; font-size: 16px; border: none; border-radius: 4px;
+    color: #fff; cursor: pointer; margin-right: 10px;
+  }
+  #completeButton { background-color: #ccc; }
+  #completeButton.enabled { background-color: #e74c3c; }
+  #downloadButton { background-color: #3498db; display: none; }
+  #downloadButton:hover { background-color: #2980b9; }
+</style>
+</head>
+<body>
+<h2>任务二：日语单词词义匹配</h2>
+<div class="instruction">
+  <p>感谢您的参与！</p>
+  <p>以下有19个单词。点击单词后可查看或隐藏该单词的词性及中文释义。</p>
+  <p>请从右侧释义列表中找到每个单词的正确释义，并将其序号填写在该单词的对应序号框里。没有时间限制，请认真完成。</p>
+  <p>完成后，点击“完成”并下载学习数据。之后会进行单词测试。</p>
+</div>
+<div class="research-info">
+  <label for="researchId">请输入您的编号：</label>
+  <input id="researchId" placeholder="例如：20250401-001" type="text"/>
+</div>
+<div class="start-task">
+  <span>准备好后，请点击“开始”：</span>
+  <button id="startButton">开始</button>
+</div>
+<div class="container" id="learningContainer">
+  <div class="table-container">
+    <table id="matchTable">
+      <thead>
+        <tr><th>单词</th><th>请在此写下序号</th><th>中文释义</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+<div class="buttons">
+  <button disabled id="completeButton">完成</button>
+  <button id="downloadButton">下载学习数据</button>
+</div>
+<script>
+  function getJSTTimestamp(date) {
+    const jst = date.toLocaleString('sv',{timeZone:'Asia/Tokyo',hour12:false});
+    return jst.replace(' ','T') + '+09:00';
+  }
+
+  const items = [
+    {word:"生え際（はえぎわ）",part:"名词",meaning:"发际线"},
+    {word:"はったり",part:"名词",meaning:"虚张声势"},
+    {word:"介添え（かいぞえ）",part:"名词",meaning:"照料"},
+    {word:"こめかみ",part:"名词",meaning:"太阳穴"},
+    {word:"手捌き（てさばき）",part:"名词",meaning:"操作手法"},
+    {word:"苗代（なわしろ）",part:"名词",meaning:"秧田"},
+    {word:"せせらぎ",part:"名词",meaning:"浅溪的流水声"},
+    {word:"図太い（ずぶとい）",part:"形容词",meaning:"厚脸皮的"},
+    {word:"干潟（ひがた）",part:"名词",meaning:"滩涂"},
+    {word:"せがむ",part:"动词",meaning:"央求"},
+    {word:"潮騒（しおさい）",part:"名词",meaning:"涨潮时的涛声"},
+    {word:"筒抜け（つつぬけ）",part:"名词",meaning:"秘密等完全泄露"},
+    {word:"あらまし",part:"名词",meaning:"概要"},
+    {word:"佃煮（つくだに）",part:"名词",meaning:"酱油煮的小鱼类日式小菜"},
+    {word:"いかつい",part:"形容词",meaning:"不和蔼的"},
+    {word:"沖合（おきあい）",part:"名词",meaning:"离岸海域"},
+    {word:"淀む（よどむ）",part:"动词",meaning:"停滞"},
+    {word:"うねり",part:"名词",meaning:"汹涌的浪涛"},
+    {word:"縁取り（ふちどり）",part:"名词",meaning:"镶边"}
+  ];
+
+  const matchItems = items;
+  const definitions = [
+    "酱油煮的小鱼类日式小菜",
+    "不和蔼的",
+    "汹涌的浪涛",
+    "央求",
+    "离岸海域",
+    "太阳穴",
+    "照料",
+    "浅溪的流水声",
+    "涨潮时的涛声",
+    "发际线",
+    "操作手法",
+    "镶边",
+    "厚脸皮的",
+    "停滞",
+    "虚张声势",
+    "秧田",
+    "概要",
+    "滩涂",
+    "秘密等完全泄露"
+];
+const researchIdInput = document.getElementById("researchId");
+  const startButton = document.getElementById("startButton");
+  const learningContainer = document.getElementById("learningContainer");
+  const matchTableBody = document.querySelector("#matchTable tbody");
+  const completeButton = document.getElementById("completeButton");
+  const downloadButton = document.getElementById("downloadButton");
+
+  let taskStartTime=null, inputLogs={}, clickData={};
+
+  matchItems.forEach((item,idx)=>{
+    const tr=document.createElement("tr");
+    const tdW=document.createElement("td");
+    tdW.className="word-cell";
+    tdW.innerHTML=`<span>${item.word}</span><div class="word-detail">（${item.part}；${item.meaning}）</div>`;
+    tdW.addEventListener("click",()=>{
+      const now=new Date(),ts=getJSTTimestamp(now);
+      clickData[item.word]=clickData[item.word]||{clicks:0,exposures:[]};
+      clickData[item.word].clicks++;
+      const detail=tdW.querySelector(".word-detail");
+      if(detail.style.display==="block"){
+        detail.style.display="none";
+        const exp=clickData[item.word].exposures.slice(-1)[0];
+        if(exp&&!exp.end){exp.end=ts;exp.duration=((new Date(exp.end)-new Date(exp.start))/1000).toFixed(2);}
+      } else {
+        detail.style.display="block";
+        clickData[item.word].exposures.push({start:ts,end:null,duration:null});
+      }
+    });
+    const tdI=document.createElement("td"),inp=document.createElement("input");
+    inp.type="text"; inp.id=`input_${idx}`;
+    inp.addEventListener("focus",()=>{inputLogs[inp.id]=inputLogs[inp.id]||{};inputLogs[inp.id].startTime=getJSTTimestamp(new Date());});
+    inp.addEventListener("blur",()=>{inputLogs[inp.id]=inputLogs[inp.id]||{};inputLogs[inp.id].endTime=getJSTTimestamp(new Date());});
+    tdI.appendChild(inp);
+    const tdD=document.createElement("td");
+    tdD.textContent=`${idx+1}. ${definitions[idx]}`;
+    tr.append(tdW,tdI,tdD);
+    matchTableBody.appendChild(tr);
+  });
+
+  startButton.addEventListener("click",()=>{
+    if(!researchIdInput.value.trim()){alert("请先输入您的编号");return;}
+    if(!taskStartTime){taskStartTime=new Date();learningContainer.style.display="block";startButton.disabled=true;}
+  });
+
+  matchTableBody.addEventListener("input",()=>{
+    const filled=matchItems.every((_,i)=>document.getElementById(`input_${i}`).value.trim()!=="");
+    if(filled){completeButton.disabled=false;completeButton.classList.add("enabled");}
+  });
+
+  completeButton.addEventListener("click",()=>{
+    if(!researchIdInput.value.trim()){alert("请先输入您的编号");return;}
+    // 记录时长及未闭合暴露
+    const endTime=new Date(),duration=((endTime-taskStartTime)/1000).toFixed(2);
+    Object.values(clickData).forEach(e=>e.exposures.forEach(exp=>{if(!exp.end){exp.end=getJSTTimestamp(new Date());exp.duration=((new Date(exp.end)-new Date(exp.start))/1000).toFixed(2);}}));
+    // 提示用户检查
+    alert("请再次检查正确的释义吧");
+    // 在每个输入后显示正确答案
+    matchItems.forEach((item,idx)=>{
+      const tr=matchTableBody.children[idx];
+      const tdI=tr.children[1];
+      const correctIdx=definitions.indexOf(item.meaning)+1;
+      const info=document.createElement("span");
+      info.style.marginLeft="8px"; info.style.color="#e74c3c";
+      info.textContent=`${correctIdx}. ${item.meaning}`;
+      tdI.appendChild(info);
+    });
+    // 存储数据
+    localStorage.setItem("exportTask2",JSON.stringify({
+      researchId:researchIdInput.value.trim(),
+      duration,definitions,
+      answers:matchItems.map((item,i)=>{const inp=document.getElementById(`input_${i}`);const log=inputLogs[inp.id]||{};return{word:item.word,answer:inp.value.trim(),startTime:log.startTime||"",endTime:log.endTime||"",duration:log.startTime&&log.endTime?((new Date(log.endTime)-new Date(log.startTime))/1000).toFixed(2):""};}),
+      clickData
+    }));
+    completeButton.style.display="none"; downloadButton.style.display="inline-block";
+  });
+
+  downloadButton.addEventListener("click",()=>{
+    const data=JSON.parse(localStorage.getItem("exportTask2")||"{}");
+    const now=new Date(),jst=getJSTTimestamp(now);
+    let csv=`编号,${data.researchId}\n总任务时长(秒),${data.duration}\n导出时间,${jst}\n\n`;
+    csv+="【中文释义列表】\n序号,释义\n";
+    data.definitions.forEach((d,i)=>csv+=`${i+1},${d}\n`);
+    csv+="\n【答题记录】\n单词,填写序号,开始时间(JST),结束时间(JST),时长(秒)\n";
+    data.answers.forEach(a=>csv+=`${a.word},${a.answer},${a.startTime},${a.endTime},${a.duration}\n`);
+    csv+="\n【点击日志】\n单词,点击次数,暴露(JSON)\n";
+    Object.entries(data.clickData).forEach(([w,v])=>csv+=`${w},${v.clicks},"${JSON.stringify(v.exposures)}"\n`);
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob);
+    const link=document.createElement("a");link.href=url;
+    link.download=`学习数据_任务2_${data.researchId}_${jst.slice(0,10)}.csv`;document.body.appendChild(link);
+    link.click();document.body.removeChild(link);URL.revokeObjectURL(url);
+  });
+</script>
+</body>
+</html>
