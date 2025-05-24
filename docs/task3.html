@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>任务三</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:20px; background:#f9f9f9; color:#333; line-height:1.6; }
+    h2 { margin-bottom:10px; }
+    .instruction { background:#fff; border:1px solid #ddd; border-radius:6px; padding:15px; margin-bottom:20px; }
+    .research-info { margin-bottom:20px; }
+    .research-info label { font-size:16px; margin-right:10px; }
+    .research-info input { padding:5px; font-size:16px; width:250px; }
+    .start-section { display:flex; align-items:center; margin-bottom:20px; }
+    .start-section p { margin:0; margin-right:10px; font-size:16px; }
+    #startButton {
+      background:#3498db; color:#fff; border:none; border-radius:4px;
+      padding:8px 16px; font-size:16px; cursor:pointer;
+      transition:background-color .3s;
+    }
+    #startButton:hover { background:#2980b9; }
+    .sentence-container { background:#fff; border:1px solid #ddd; border-radius:6px; padding:15px; display:none; }
+    .example-box { background:#fafafa; border:1px dashed #ccc; padding:10px; margin-bottom:20px; font-size:14px; line-height:1.5; }
+    .sentence-item { border:1px solid #eee; border-radius:4px; padding:10px; margin-bottom:15px; }
+    .sentence-item h3 {
+      display:inline-block;
+      font-family:"Hiragino Sans","Meiryo",sans-serif;
+      font-size:16px; line-height:2; font-weight:normal; margin:0; cursor:pointer;
+    }
+    .word-detail {
+      display:none; margin-left:8px;
+      font-family:"Microsoft YaHei","PingFang SC","SimSun",sans-serif;
+      font-size:14px; color:#555;
+    }
+    .input-area { margin-top:10px; }
+    .input-area textarea {
+      width:100%; height:1.5em; font-size:14px; padding:6px; resize:vertical;
+    }
+    .example-sentence { display:none; margin-top:10px; font-size:14px; color:#888; }
+    .buttons { margin-top:20px; }
+    #completeButton, #downloadButton {
+      padding:10px 20px; font-size:16px; border:none; border-radius:4px; color:#fff;
+      cursor:pointer; margin-right:10px; transition:background-color .3s;
+    }
+    #completeButton { background:#ccc; cursor:not-allowed; }
+    #completeButton.enabled { background:#e74c3c; cursor:pointer; }
+    #downloadButton { background:#3498db; display:none; }
+    #downloadButton:hover { background:#2980b9; }
+    .modal-overlay {
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,.5); display:flex;
+      justify-content:center; align-items:center; visibility:hidden;
+    }
+    .modal {
+      background:#fff; padding:20px 30px; border-radius:6px;
+      box-shadow:0 2px 10px rgba(0,0,0,.3); text-align:center;
+    }
+    .modal button {
+      margin-top:20px; padding:6px 12px; font-size:14px;
+      border:none; border-radius:4px; background:#3498db; color:#fff; cursor:pointer;
+    }
+    .modal button:hover { background:#2980b9; }
+  </style>
+</head>
+<body>
+  <h2>任务三</h2>
+  <div class="instruction">
+    <p>请仔细阅读以下任务说明，确认理解后再开始进行任务。
+    </p>
+    <p>你将看到19个单词。点击单词，可查看或隐藏该单词的词性及中文释义。<br>
+       请用每个单词造句，并填写在对应输入框内。</p>
+    <p>本环节没有时间限制，请认真完成。<br>
+       全部完成后，请点击“完成”按钮，查看每个单词的句子示例。<br>
+       查看示例后，请下载你的学习数据。
+    </p>
+    <p><strong>注意：</strong>任务结束后，将进行单词测试，请提前做好准备。</p>
+  </div>
+
+  <div class="research-info">
+    <label for="researchId">请输入您的编号：</label>
+    <input type="text" id="researchId" placeholder="例如：20250430-001">
+  </div>
+
+  <div class="start-section">
+    <p>如您已准备就绪，请点击“开始”：</p>
+    <button id="startButton">开始</button>
+  </div>
+
+  <div class="sentence-container" id="sentenceContainer">
+    <div class="example-box">
+      <strong>例：</strong>面白い（形容詞；有趣的）：<br>
+       昨日の映画は本当に面白かった。
+    </div>
+  </div>
+
+  <div class="buttons">
+    <button id="completeButton" disabled>完成</button>
+    <button id="downloadButton" style="display:none;">下载所有学习数据</button>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <p>请查看每个单词的句子示例吧。</p>
+      <button id="closeModalButton">确定</button>
+    </div>
+  </div>
+
+<script>
+  // 获取 JST 格式时间字符串
+  function nowJST(){ return new Date().toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}); }
+
+  // 单词数据
+  const sentenceData = [
+    {word:"生え際（はえぎわ）",part:"名词",meaning:"发际线",example:"額の生え際に小さい傷跡がある。",clickCount:0},
+    {word:"はったり",part:"名词",meaning:"虚张声势",example:"彼がはったりで騙していることは明白だった。",clickCount:0},
+    {word:"介添え（かいぞえ）",part:"名词",meaning:"照料",example:"家族からの介添えが必要だ。",clickCount:0},
+    {word:"こめかみ",part:"名词",meaning:"太阳穴",example:"こめかみを押すと、眼精疲労が和らぐ気がする。",clickCount:0},
+    {word:"手捌き（てさばき）",part:"名词",meaning:"操作手法",example:"料理人が上手な手捌きで肉を切っている。",clickCount:0},
+    {word:"苗代（なわしろ）",part:"名词",meaning:"秧田",example:"田植え前に苗代を整える必要がある。",clickCount:0},
+    {word:"せせらぎ",part:"名词",meaning:"浅溪的流水声",example:"川のせせらぎが私の心を癒した。",clickCount:0},
+    {word:"図太い（ずぶとい）",part:"形容词",meaning:"厚脸皮的",example:"この人は図太い性格を持つ人だ。",clickCount:0},
+    {word:"干潟（ひがた）",part:"名词",meaning:"滩涂",example:"干潟で貝拾いをするのは楽しい。",clickCount:0},
+    {word:"せがむ",part:"动词",meaning:"央求",example:"子どもが「お菓子をくれ」とせがむ。",clickCount:0},
+    {word:"潮騒（しおさい）",part:"名词",meaning:"涨潮时的涛声",example:"潮騒を聴きながら、目が覚めた。",clickCount:0},
+    {word:"筒抜け（つつぬけ）",part:"名词",meaning:"秘密等完全泄露",example:"私の秘密が他の人に筒抜けだ。",clickCount:0},
+    {word:"あらまし",part:"名词",meaning:"概要",example:"上司に計画のあらましを話した。",clickCount:0},
+    {word:"佃煮（つくだに）",part:"名词",meaning:"酱油煮的小鱼类日式小菜",example:"母が作った佃煮がとても美味しい。",clickCount:0},
+    {word:"いかつい",part:"形容词",meaning:"不和蔼的",example:"いかつい男性には、どことなく渋いという印象があります。",clickCount:0},
+    {word:"沖合（おきあい）",part:"名词",meaning:"离岸海域",example:"沖合で釣りをする人が多く集まっている。",clickCount:0},
+    {word:"淀む（よどむ）",part:"动词",meaning:"停滞",example:"会議は、議論が淀んでなかなか結論が出ない。",clickCount:0},
+    {word:"うねり",part:"名词",meaning:"汹涌的浪涛",example:"台風の影響で大きなうねりが来た。",clickCount:0},
+    {word:"縁取り（ふちどり）",part:"名词",meaning:"镶边",example:"名刺の文字に青色の縁取りが付いている。",clickCount:0}
+  ];
+  // 初始化日志和时间字段
+  sentenceData.forEach(it=>{
+    it.firstClick = null;
+    it.firstClickDate = null;
+    it.sentenceTime = null;
+    it.sentenceDate = null;
+    it.clickLog = [];
+    it.exposures = [];
+    it.currentShowTS = null;
+  });
+
+  const userSentences = Array(sentenceData.length).fill("");
+  const container = document.getElementById("sentenceContainer");
+  const startBtn = document.getElementById("startButton");
+  const completeBtn = document.getElementById("completeButton");
+  const downloadBtn = document.getElementById("downloadButton");
+  const modal = document.getElementById("modalOverlay");
+  const closeModalBtn = document.getElementById("closeModalButton");
+  let taskStartTime = null;
+
+  // 动态生成题目
+  sentenceData.forEach((item, i) => {
+    const div = document.createElement("div");
+    div.className = "sentence-item";
+
+    const h3 = document.createElement("h3");
+    h3.textContent = `${i+1}. ${item.word}`;
+    const detail = document.createElement("span");
+    detail.className = "word-detail";
+    detail.textContent = `（${item.part}；${item.meaning}）`;
+    h3.addEventListener("click", () => {
+      const now = new Date(), ts = nowJST();
+      if (!item.firstClick) {
+        item.firstClick = ts;
+        item.firstClickDate = now;
+      }
+      item.clickCount++;
+      const showing = detail.style.display !== "inline";
+      detail.style.display = showing ? "inline" : "none";
+      item.clickLog.push({ ts, status: showing ? "显示" : "隐藏" });
+      if (showing) {
+        item.currentShowTS = now;
+      } else if (item.currentShowTS) {
+        const dur = ((now - item.currentShowTS) / 1000).toFixed(2);
+        item.exposures.push({
+          start: item.currentShowTS.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
+          end: ts,
+          duration: dur
+        });
+        item.currentShowTS = null;
+      }
+    });
+    div.append(h3, detail);
+
+    const ia = document.createElement("div");
+    ia.className = "input-area";
+    const ta = document.createElement("textarea");
+    ta.placeholder = "请在此输入句子";
+    ta.addEventListener("blur", () => {
+      if (!item.sentenceTime && ta.value.trim()) {
+        item.sentenceTime = nowJST();
+        item.sentenceDate = new Date();
+        userSentences[i] = ta.value.trim();
+        // 所有题都有输入后启用完成按钮
+        if (userSentences.every(s => s)) {
+          completeBtn.disabled = false;
+          completeBtn.classList.add("enabled");
+        }
+      }
+    });
+    ia.appendChild(ta);
+    div.appendChild(ia);
+
+    const ex = document.createElement("p");
+    ex.className = "example-sentence";
+    ex.textContent = `示例：${item.example}`;
+    div.appendChild(ex);
+
+    container.appendChild(div);
+  });
+
+  // “开始”按钮逻辑
+  startBtn.addEventListener("click", () => {
+    if (!document.getElementById("researchId").value.trim()) {
+      alert("请先输入编号！");
+      return;
+    }
+    taskStartTime = new Date();
+    container.style.display = "block";
+    startBtn.disabled = true;
+  });
+
+  // “完成”按钮：仅弹提示，不显示“下载”按钮
+  completeBtn.addEventListener("click", () => {
+    modal.style.visibility = "visible";
+    // 这里不再显示downloadBtn
+  });
+
+  // 关闭弹窗 & 显示示例句，并将完成按钮变为下载按钮
+  closeModalBtn.addEventListener("click", () => {
+    modal.style.visibility = "hidden";
+    document.querySelectorAll(".example-sentence").forEach(e => e.style.display = "block");
+    // 隐藏完成按钮，显示下载按钮
+    completeBtn.style.display = "none";
+    downloadBtn.style.display = "inline-block";
+  });
+
+  // “下载所有学习数据”按钮
+  downloadBtn.addEventListener("click", () => {
+    const end = new Date();
+    const taskDuration = ((end - taskStartTime) / 1000).toFixed(2);
+
+    let csv = "编号," + document.getElementById("researchId").value + "\n";
+    csv += "任务时长(秒)," + taskDuration + "\n\n";
+
+    // 汇总表：含造句完成时长
+    csv += "单词,造句,点击次数,首次点击,造句完成,造句时长(秒)\n";
+    sentenceData.forEach((it, idx) => {
+      const dur = (it.firstClickDate && it.sentenceDate)
+        ? ((it.sentenceDate - it.firstClickDate) / 1000).toFixed(2)
+        : "";
+      csv += `${it.word},"${userSentences[idx]}",${it.clickCount},${it.firstClick || ""},${it.sentenceTime || ""},${dur}\n`;
+    });
+
+    // 点击日志
+    csv += "\n单词,时间戳(JST),状态,暴露时长(秒)\n";
+    sentenceData.forEach(it => {
+      it.clickLog.forEach((log, i) => {
+        const exp = (log.status === "隐藏" && it.exposures[i])
+          ? it.exposures[i].duration : "";
+        csv += `${it.word},${log.ts},${log.status},${exp}\n`;
+      });
+    });
+
+    // 触发下载
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const filename = `学习数据_任务3_${document.getElementById("researchId").value}_${yyyy}${mm}${dd}.csv`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+</script>
+</body>
+</html>
